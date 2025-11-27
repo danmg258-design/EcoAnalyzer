@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EcoHabit — Analizador de hábitos</title>
+  <style>
+    :root{--bg:#f4f7f6;--card:#ffffff;--accent:#0f766e;--muted:#6b7280}
+    body{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background:var(--bg); margin:0; padding:32px; color:#0f172a}
+    .container{max-width:760px;margin:0 auto}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(15,23,42,.06);padding:20px}
+    h1{margin:0 0 6px;font-size:20px}
+    p.lead{margin:0 0 18px;color:var(--muted)}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    label{display:block;font-size:13px;margin-bottom:6px;color:var(--muted)}
+    input[type=number], select{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ee;font-size:14px}
+    .actions{display:flex;gap:8px;margin-top:12px}
+    button{background:var(--accent);color:white;padding:10px 14px;border:0;border-radius:10px;cursor:pointer}
+    button.ghost{background:transparent;color:var(--accent);border:1px solid rgba(15,118,110,.12)}
+    .result{margin-top:18px;padding:14px;border-radius:10px;background:linear-gradient(180deg, #ffffff, #fbfffe);border:1px solid rgba(15,118,110,.06)}
+    .score{font-size:28px;font-weight:700;color:var(--accent)}
+    ul.reco{margin:8px 0 0 18px}
+    .small{font-size:13px;color:var(--muted)}
+    footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
+    @media (max-width:640px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>EcoHabit — Analizador de hábitos diarios</h1>
+      <p class="lead">Registra tus hábitos y obtén un puntaje ecológico y recomendaciones para mejorar.</p>
+
+      <form id="form">
+        <div class="grid">
+          <div>
+            <label for="ducha">Minutos de ducha (min)</label>
+            <input id="ducha" name="ducha" type="number" min="0" max="120" step="1" value="8" required />
+          </div>
+
+          <div>
+            <label for="horas">Horas de luz encendida al día</label>
+            <input id="horas" name="horas" type="number" min="0" max="24" step="0.1" value="3" required />
+          </div>
+
+          <div>
+            <label for="transporte">Transporte principal</label>
+            <select id="transporte" name="transporte">
+              <option value="auto">Auto</option>
+              <option value="publico">Transporte público</option>
+              <option value="bici">Bicicleta / Caminar</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="veces">Veces por semana (opcional)</label>
+            <input id="veces" name="veces" type="number" min="0" max="168" step="1" value="7" />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="button" id="calcular">Calcular puntaje</button>
+          <button type="button" id="limpiar" class="ghost">Limpiar</button>
+          <button type="button" id="descargar" class="ghost">Descargar resultado</button>
+        </div>
+      </form>
+
+      <div id="resultado" class="result" hidden>
+        <div class="small">Tu puntaje ecológico</div>
+        <div class="score" id="score">0/100</div>
+        <div id="analisis" class="small"></div>
+        <div style="margin-top:10px">
+          <strong>Recomendaciones:</strong>
+          <ul class="reco" id="recomendaciones"></ul>
+        </div>
+      </div>
+
+      <div id="mensaje" class="small" style="margin-top:10px"></div>
+
+    </div>
+
+    <footer>
+      Versión web simple — diseñado para entregas de proyecto. Puedes abrir el HTML en tu navegador.
+    </footer>
+  </div>
+
+  <script>
+    // Versión en JS de la lógica del programa Python
+    function calcularPuntaje(duchaMin, transporte, horasLuz) {
+      let puntaje = 100;
+
+      if (duchaMin > 10) puntaje -= (duchaMin - 10) * 2;
+      else if (duchaMin < 5) puntaje += 3;
+
+      if (transporte === 'auto') puntaje -= 20;
+      else if (transporte === 'publico') puntaje -= 8;
+      else if (transporte === 'bici') puntaje += 5;
+
+      if (horasLuz > 3) puntaje -= (horasLuz - 3) * 2;
+      else puntaje += 3;
+
+      if (puntaje > 100) puntaje = 100;
+      if (puntaje < 0) puntaje = 0;
+
+      return Math.round(puntaje);
+    }
+
+    function generarRecomendaciones(duchaMin, transporte, horasLuz) {
+      const recomendaciones = [];
+      if (duchaMin > 10) {
+        const ahorro = (duchaMin - 10) * 10;
+        recomendaciones.push(`Reducir tu ducha en ${duchaMin - 10} min podría ahorrar aprox. ${ahorro} litros por día.`);
+      } else {
+        recomendaciones.push('¡Bien! Tienes una buena duración de ducha.');
+      }
+
+      if (transporte === 'auto') recomendaciones.push('Considera usar transporte público o bicicleta para reducir emisiones de CO2.');
+      else if (transporte === 'publico') recomendaciones.push('Buen trabajo usando transporte público.');
+      else recomendaciones.push('Excelente elección usando bicicleta o caminando.');
+
+      if (horasLuz > 3) recomendaciones.push('Apaga luces innecesarias y aprovecha luz natural cuando sea posible.');
+      else recomendaciones.push('Buen uso responsable de la energía.');
+
+      return recomendaciones;
+    }
+
+    // DOM
+    const form = document.getElementById('form');
+    const btnCalc = document.getElementById('calcular');
+    const btnLimpiar = document.getElementById('limpiar');
+    const btnDesc = document.getElementById('descargar');
+    const resultado = document.getElementById('resultado');
+    const scoreEl = document.getElementById('score');
+    const recList = document.getElementById('recomendaciones');
+    const analisis = document.getElementById('analisis');
+    const mensaje = document.getElementById('mensaje');
+
+    btnCalc.addEventListener('click', () => {
+      mensaje.textContent = '';
+      const ducha = Number(document.getElementById('ducha').value);
+      const horas = Number(document.getElementById('horas').value);
+      const transporte = document.getElementById('transporte').value;
+
+      // Validaciones simples
+      if (!Number.isFinite(ducha) || ducha < 0 || ducha > 120) { mensaje.textContent = 'Por favor ingresa minutos de ducha entre 0 y 120.'; return; }
+      if (!Number.isFinite(horas) || horas < 0 || horas > 24) { mensaje.textContent = 'Por favor ingresa horas entre 0 y 24.'; return; }
+
+      const puntaje = calcularPuntaje(ducha, transporte, horas);
+      const recs = generarRecomendaciones(ducha, transporte, horas);
+
+      // Mostrar
+      scoreEl.textContent = `${puntaje}/100`;
+      analisis.textContent = `Ducha: ${ducha} min · Transporte: ${transporte} · Horas de luz: ${horas}`;
+
+      recList.innerHTML = '';
+      recs.forEach(r => {
+        const li = document.createElement('li'); li.textContent = r; recList.appendChild(li);
+      });
+
+      resultado.hidden = false;
+
+      // Guardar último resultado en data-* para descargar
+      resultado.dataset.last = JSON.stringify({ducha, horas, transporte, puntaje, recomendaciones: recs, fecha: new Date().toISOString()});
+    });
+
+    btnLimpiar.addEventListener('click', () => {
+      form.reset(); resultado.hidden = true; mensaje.textContent = '';
+      // restablecer valores por defecto
+      document.getElementById('ducha').value = 8; document.getElementById('horas').value = 3; document.getElementById('veces').value = 7;
+    });
+
+    btnDesc.addEventListener('click', () => {
+      if (!resultado.dataset.last) { mensaje.textContent = 'Calcula primero para descargar el resultado.'; return; }
+      const data = resultado.dataset.last;
+      const blob = new Blob([data], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'ecohabit_resultado.json';
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+
+    // Soportar Enter en inputs
+    form.addEventListener('submit', (e) => { e.preventDefault(); btnCalc.click(); });
+  </script>
+</body>
+</html>
